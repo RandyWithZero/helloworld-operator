@@ -3,5 +3,13 @@ kind: Helloworld
 metadata:
   name: helloworld-sample
 spec:
-  # Add fields here
-  foo: bar
+  template:
+     metadata:
+        name: nginx
+     spec:
+       containers:
+         - name: nginx
+           image: 168.1.9.1/pub/nginx:1.19.1
+           ports:
+             - name: p1
+               containerPort: 80

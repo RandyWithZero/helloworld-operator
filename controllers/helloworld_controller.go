@@ -22,6 +22,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -109,7 +111,11 @@ func makePod(hello *demov1.Helloworld) *v1.Pod {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HelloworldReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&demov1.Helloworld{}).
+	c := ctrl.NewControllerManagedBy(mgr)
+	c.Watches(&source.Kind{Type: &v1.Pod{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &demov1.Helloworld{},
+	})
+	return c.For(&demov1.Helloworld{}).
 		Complete(r)
 }
