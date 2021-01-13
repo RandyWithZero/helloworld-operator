@@ -1,0 +1,11 @@
+domain: hw.io
+layout: go.kubebuilder.io/v3
+projectName: helloworld-operator
+repo: helloworld-operator
+resources:
+- api:
+    crdVersion: v1
+  group: demo
+  kind: Helloworld
+  version: v1
+version: 3-alpha
