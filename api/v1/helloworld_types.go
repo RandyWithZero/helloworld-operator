@@ -17,7 +17,13 @@ limitations under the License.
 package v1
 
 import (
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	Pending = "mypending"
+	Running = "myrunning"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -29,13 +35,27 @@ type HelloworldSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Helloworld. Edit helloworld_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	//Foo string `json:"foo,omitempty"`
+	Template v1.PodTemplateSpec `json:"template" protobuf:"bytes,6,opt,name=template"`
 }
 
 // HelloworldStatus defines the observed state of Helloworld
 type HelloworldStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Phase string `json:"phase,omitempty"`
+}
+
+func (status *HelloworldStatus) SetDefault(helloworld *Helloworld) bool {
+	changed := false
+	if helloworld.Status.Phase == "" {
+		helloworld.Status.Phase = Pending
+		changed = true
+	}
+	return changed
+}
+func (helloworld *Helloworld) StatusSetDefault() bool {
+	return helloworld.Status.SetDefault(helloworld)
 }
 
 //+kubebuilder:object:root=true

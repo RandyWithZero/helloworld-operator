@@ -18,6 +18,10 @@ package controllers
 
 import (
 	"context"
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,8 +55,56 @@ func (r *HelloworldReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	_ = r.Log.WithValues("helloworld", req.NamespacedName)
 
 	// your logic here
+	helloworld := &demov1.Helloworld{}
+	if err := r.Get(ctx, req.NamespacedName, helloworld); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	if helloworld.StatusSetDefault() {
+		if err := r.Status().Update(ctx, helloworld); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{}, nil
+	}
+	p := &v1.Pod{}
+	err := r.Get(ctx, req.NamespacedName, p)
+	if err == nil {
+		if v1.PodSucceeded == p.Status.Phase && demov1.Running != helloworld.Status.Phase {
+			helloworld.Status.Phase = demov1.Running
+			if err := r.Status().Update(ctx, helloworld); err != nil {
+				return ctrl.Result{}, err
+			}
+		} else if v1.PodSucceeded != p.Status.Phase && demov1.Pending != helloworld.Status.Phase {
+			helloworld.Status.Phase = demov1.Pending
+			if err := r.Status().Update(ctx, helloworld); err != nil {
+				return ctrl.Result{}, err
+			}
+		} else {
+			return ctrl.Result{}, nil
+		}
+	} else {
+		if errors.IsNotFound(err) {
+			pod := makePod(helloworld)
+			if err := controllerutil.SetControllerReference(helloworld, pod, r.Scheme); err {
+				return ctrl.Result{}, err
+			}
+			if err := r.Create(ctx, pod); err != nil && !errors.IsAlreadyExists(err) {
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, err
+		} else {
+			return ctrl.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
+}
+func makePod(hello *demov1.Helloworld) *v1.Pod {
+	return &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      hello.Name,
+			Namespace: hello.Namespace,
+		}, Spec: *hello.Spec.Template.Spec.DeepCopy(),
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
