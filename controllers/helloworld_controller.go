@@ -84,7 +84,7 @@ func (r *HelloworldReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	} else {
 		if errors.IsNotFound(err) {
 			pod := makePod(helloworld)
-			if err := controllerutil.SetControllerReference(helloworld, pod, r.Scheme); err {
+			if err := controllerutil.SetControllerReference(helloworld, pod, r.Scheme); err != nil {
 				return ctrl.Result{}, err
 			}
 			if err := r.Create(ctx, pod); err != nil && !errors.IsAlreadyExists(err) {

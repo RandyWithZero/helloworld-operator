@@ -5,6 +5,8 @@ WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
+# set Proxy
+RUN go env -w GOPROXT=https://goproxy.cn,direct
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
@@ -19,7 +21,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+# FROM gcr.io/distroless/static:nonroot
+# 换成国内镜像源
+FROM kubeimages/distroless-static:latest
 WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532
